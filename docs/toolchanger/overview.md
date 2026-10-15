@@ -18,6 +18,8 @@ physical tool swap and the filament state for each toolhead. Currently AFC nativ
 swap operation but can also work alongside other non-klipper-toolchanger setups using custom
 macros. Tool swap handling is planned to move into AFC directly in a future release, at which point
 klipper-toolchanger and other external toolchanger systems will continue to be supported.
+The [Bondtech INDX](https://github.com/BondtechAB/INDX) is also supported natively, see
+[Bondtech INDX](indx.md).
  
 Before configuring AFC, your toolchanger system must be fully installed and verified working
 independently. If using [klipper-toolchanger](https://github.com/viesturz/klipper-toolchanger),

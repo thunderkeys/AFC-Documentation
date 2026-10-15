@@ -46,6 +46,9 @@ nav:
           - Configuration: toolchanger/configuration.md
           - Print Start/End Macros: toolchanger/print_start_end.md
           - Slicer Config: toolchanger/slicer_config.md
+          - Bondtech INDX:
+            - Setup: toolchanger/indx.md
+            - Macro Resync: toolchanger/indx_macro_resync.md
           - Commercial Printers:
             - Snapmaker U1: toolchanger/snapmaker.md
       - Configuration:

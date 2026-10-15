@@ -124,6 +124,11 @@ map:
 #    to a unit such as AFC_BoxTurtle/NightOwl/etc) and need to override
 #    KTC assigned T(n) macro.  This variable also allows a comma
 #    separated list to be passed in.
+tool_index:
+#    Default: <none>
+#    Physical tool number. Required for Bondtech INDX tools, where it is the
+#    INDX tool number (t<n>_x / t<n>_dock_y in indx.cfg). Each INDX tool needs
+#    a unique tool_index below tool_count.
 custom_tool_swap:
 #    Default: <none>
 #    Custom macro to run when this tool is selected.

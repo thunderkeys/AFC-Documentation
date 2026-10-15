@@ -22,3 +22,23 @@ These commands are available when using AFC with a toolchanger setup and `[AFC_T
     options:
       docstring_style: numpy
       heading_level: 3
+
+## Bondtech INDX Commands
+
+These commands are registered when `[AFC_Toolchanger <name>]` uses `backend: indx`. They are called by
+the INDX macros installed with AFC and are not meant to be run by hand. See
+[Bondtech INDX](../../toolchanger/indx.md).
+
+-----
+[AFC_INDX_TOOL_CHANGED]
+::: AFC_indx.AfcIndx.cmd_AFC_INDX_TOOL_CHANGED
+    options:
+      docstring_style: numpy
+      heading_level: 3
+
+-----
+[AFC_INDX_PRE_LATCH]
+::: AFC_indx.AfcIndx.cmd_AFC_INDX_PRE_LATCH
+    options:
+      docstring_style: numpy
+      heading_level: 3

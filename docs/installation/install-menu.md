@@ -30,6 +30,10 @@ are:
 - HTLF
 - QuattroBox
 - NightOwl
+- Bondtech INDX
+
+Bondtech INDX installs the INDX macros and toolchanger configuration instead of a filament unit. See
+[Bondtech INDX](../toolchanger/indx.md).
 
 #### `1. Printer.cfg Configuration`
 
@@ -133,6 +137,18 @@ defaults to *true* and is recommended to be left as such.
 
 ???+ warning
     The use of a filament buffer is *HIGHLY* recommended. If you are not using a buffer, select `None`.
+
+#### `J. INDX tool count`
+
+=== "Description"
+    Number of INDX tools installed on the printer. One `[AFC_extruder toolN]` section and one `T<n>` wrapper
+    is created per tool. Defaults to 3.
+=== "Configuration"
+    Once installed, change the tool count with `T. Set INDX tool count` in the
+    [Utilities Menu](utilities-menu.md#t-set-indx-tool-count).
+
+???+ note
+    This option will only appear if the `Installation Type` is set to `Bondtech INDX`.
 
 #### `I. Install system`
 

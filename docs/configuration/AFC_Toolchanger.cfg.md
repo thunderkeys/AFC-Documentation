@@ -10,8 +10,26 @@ Only one `[AFC_Toolchanger]` section is required per toolchanger system.
 
 ``` cfg
 [AFC_Toolchanger <toolchanger name>]
+backend: ktc
+#    Default: ktc
+#    Toolchanger type. Valid options:
+#      ktc  - klipper-toolchanger, or custom_tool_swap/custom_unselect macros
+#      indx - Bondtech INDX, see the Bondtech INDX page
+```
 
-# Currently this section is limited and more variables will be updated
-# here once more functionality is added.
+### Bondtech INDX Settings
 
+The following options are only used with `backend: indx`. Only set them if you renamed the INDX macros.
+See [Bondtech INDX](../toolchanger/indx.md) for the full setup.
+
+``` cfg
+indx_change_macro: INDX_CHANGE_TOOL
+#    Default: INDX_CHANGE_TOOL
+#    Macro AFC runs to pick up a tool, called with TOOL=<n> TEMP=<t>.
+indx_park_macro: PARK_TOOL
+#    Default: PARK_TOOL
+#    Macro AFC runs to park the tool on the head.
+indx_positions_macro: TOOL_POSITIONS
+#    Default: TOOL_POSITIONS
+#    Macro holding the INDX tool_count and no_heat_tools variables.
 ```
