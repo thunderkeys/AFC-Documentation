@@ -149,6 +149,15 @@ enable_standalone_purge: True
 #    variable can be set to False.
 #
 #    This variable overrides the global `AFC.cfg` value when set here.
+tool_cut:
+#    Default: <value of tool_cut in AFC.cfg>
+#    Set to False to skip cutting when a lane is unloaded from this tool, or True
+#    to cut on this tool only. Useful when tools differ, e.g. Bondtech INDX
+#    passive tools have no cutter.
+form_tip:
+#    Default: <value of form_tip in AFC.cfg>
+#    Set to True to form a tip when a lane is unloaded from this tool, or False
+#    to skip it on this tool only.
 ```
 
 #### LED Settings

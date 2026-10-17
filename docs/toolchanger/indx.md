@@ -90,10 +90,78 @@ has a unique `tool_index` below `tool_count`, and that all tools use the same ex
   INDX rules: a `T<n>` for a tool that is not on the head is ignored, an empty head is not heated,
   and tools in `no_heat_tools` (`indx.cfg`) are held at 0.
 - **Latch moves.** The DX extruder also drives the latch. `_TC_LATCH_MOVE` calls
-  `AFC_INDX_PRE_LATCH`, which unsyncs every AFC lane stepper on an INDX tool, and lanes only sync
-  to the extruder while their tool is on the head.
+  `AFC_INDX_PRE_LATCH`, which unsyncs and disables every AFC lane stepper on an INDX tool, and
+  lanes only sync to the extruder while their tool is on the head.
 
 Both hook commands are documented under [Toolchanger Commands](../klipper/internal/toolchanger.md).
+
+## Feeding tools from an AFC unit
+
+INDX tools can be fed from an AFC unit such as a BoxTurtle, and one printer can mix three kinds
+of tool:
+
+| Tool | Setup |
+|---|---|
+| Standalone | Spool straight to the tool, as above. |
+| One lane (1:1) | One lane with `hub: direct`, `dist_hub` set to the full bowden length to the tool. |
+| Several lanes (N:1) | Lanes through an `[AFC_hub]` that feeds only this tool. |
+
+Point a lane at its tool with `extruder: tool<n>` in the lane or unit section. Once a tool has a
+lane it is no longer standalone, and the lanes provide its `T<n>` maps instead of the tool's
+`map`. The PTFE ends on the passive tool, so the filament stays in a docked tool and the lane
+motor runs free until the tool is picked up again.
+
+Give each lane-fed tool its own TurtleNeck style buffer and use it as the tool sensor:
+
+```ini
+[AFC_extruder tool0]
+extruder_name: extruder
+tool_index: 0
+toolchanger_unit: INDX
+pin_tool_start: buffer
+buffer: buf_t0
+# INDX tools have no cutter, tip form when a lane on this tool is swapped
+form_tip: True
+tool_cut: False
+
+[AFC_BoxTurtle Turtle_1]
+hub: hub_t0
+extruder: tool0              # lanes 1 and 2 feed tool0 through hub_t0
+
+[AFC_stepper lane3]
+unit: Turtle_1:3
+hub: direct
+extruder: tool1              # lane 3 feeds tool1 on its own
+dist_hub: 1050
+...
+```
+
+What a tool change does depends on what the target tool holds:
+
+- **Tool already holds the lane**: pickup only. Nothing is unloaded, loaded or purged.
+- **Same tool, other lane** (N:1): tip form, unload, load and purge with the tool on the head.
+- **Other tool holding another lane**: park, pick the tool up at the temperature of the lane it
+  holds, unload that lane, then load the new one at its own temperature and purge.
+- **Empty tool**: pickup, then load.
+- **Runout with infinite spool to a lane on another tool**: the remaining filament is unloaded
+  from the tool on the head before it is parked, so a docked tool never keeps a short end.
+
+`tool_cut` and `form_tip` on an `[AFC_extruder]` override the `AFC.cfg` values for that tool, so
+a printer can cut on one toolhead and tip form on its INDX tools.
+
+AFC checks at startup that:
+
+- no lane feeds a tool listed in `no_heat_tools`
+- each hub feeds only one tool (checked for every toolchanger)
+
+A lane-fed tool can't use `pin_tool_start: virtual`, as with any AFC toolhead.
+
+It warns about any enabled AFC park, poop, kick, brush or cut position on the dock side of
+`clearance_y` in `indx.cfg`, since a tool on the head can hit the docked tools there.
+
+The DX drives the latch and may grip the filament, so every latch move unsyncs and disables the
+lane motors and their buffers. The lane in the tool on the head is enabled again once the change
+finishes.
 
 ## Slicer
 
@@ -112,8 +180,8 @@ CHANGE_TOOL LANE=tool{next_extruder} NEW_EXTRUDER_TEMP={new_filament_temp}
 
 ## Current limits
 
-- Filament is fed straight from a spool to each tool (standalone tools). AFC lanes feeding INDX
-  tools (one lane per tool, or several lanes per tool through a hub) are planned.
+- Lanes only move filament into a tool while it is on the head. Pushing filament into a
+  docked tool ahead of the pickup is planned.
 - `led_name` should not be set on INDX tools. All tools share the Smart Head neopixel.
 
 ## Updating the INDX macros

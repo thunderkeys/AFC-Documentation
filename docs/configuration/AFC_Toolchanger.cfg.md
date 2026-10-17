@@ -8,6 +8,10 @@ Registers a toolchanger unit with AFC.
 
 Only one `[AFC_Toolchanger]` section is required per toolchanger system.
 
+Lanes from an AFC unit can feed toolchanger tools. Each `[AFC_hub]` can only feed lanes on one
+tool, since it merges them into a single path. AFC refuses to start when a hub feeds lanes on
+more than one tool. Lanes going straight to a tool use `hub: direct`.
+
 ``` cfg
 [AFC_Toolchanger <toolchanger name>]
 backend: ktc
