@@ -97,21 +97,68 @@ Both hook commands are documented under [Toolchanger Commands](../klipper/intern
 
 ## Feeding tools from an AFC unit
 
-INDX tools can be fed from an AFC unit such as a BoxTurtle, and one printer can mix three kinds
-of tool:
+INDX tools can be fed from an AFC unit such as a BoxTurtle. The lane modes are the ones in
+[Toolchanger Configuration](configuration.md#lane-to-toolhead-connection-modes), and one printer
+can mix them:
 
 | Tool | Setup |
 |---|---|
-| Standalone | Spool straight to the tool, as above. |
-| One lane (1:1) | One lane with `hub: direct`, `dist_hub` set to the full bowden length to the tool. |
-| Several lanes (N:1) | Lanes through an `[AFC_hub]` that feeds only this tool. |
+| Standalone | No lane. Spool straight to the tool, as above. |
+| One lane (direct) | One lane with `hub: direct` or `direct_load`, `dist_hub` set to the full bowden length to the tool. |
+| Several lanes (hub) | Lanes through an `[AFC_hub]` that feeds only this tool. |
 
-Point a lane at its tool with `extruder: tool<n>` in the lane or unit section. Once a tool has a
-lane it is no longer standalone, and the lanes provide its `T<n>` maps instead of the tool's
-`map`. The PTFE ends on the passive tool, so the filament stays in a docked tool and the lane
-motor runs free until the tool is picked up again.
+The installer does not set this up, add the lanes to your config by hand. Install the unit with
+[Install Additional System](../installation/main-menu.md#a-install-additional-system) in the
+installer's main menu first, then edit its lanes as below.
 
-Give each lane-fed tool its own TurtleNeck style buffer and use it as the tool sensor:
+### What is different on INDX
+
+Set lanes up as in the toolchanger guide, with these changes:
+
+- **Point lanes at the AFC tool name.** Use `extruder: tool<n>` (the `[AFC_extruder]` name), not
+  `extruder`. Every INDX tool shares the klipper `extruder`, so only the AFC name tells them
+  apart. Once a tool has a lane it is no longer standalone.
+- **The buffer is the tool sensor.** Passive tools have no sensors, and a lane-fed tool can't use
+  `pin_tool_start: virtual`. Give each fed tool its own TurtleNeck style buffer and set
+  `pin_tool_start: buffer`. The lane pushes until the filament reaches the DX gears and
+  compresses the buffer, and that ends the bowden load.
+- **Set the buffer on the tool.** Put `buffer:` on the `[AFC_extruder]`, and every lane on that
+  tool uses it. A `buffer:` on a lane overrides it, keep every lane on one tool on the same
+  buffer.
+- **`map` goes on the lanes.** The lanes provide the tool's `T<n>` commands, the tool's own `map`
+  is only used while it is standalone.
+- **One hub per tool.** An `[AFC_hub]` can only feed one tool. AFC stops at startup if a hub has
+  lanes on two tools (this applies to every toolchanger).
+- **Lengths end at the DX gears.** `dist_hub` (direct) or `afc_bowden_length` (hub) runs to the
+  point where the buffer triggers, and `tool_stn` from there to the nozzle.
+- **Tip forming, no cutter.** INDX tools have no cutter. Set `form_tip: True` and
+  `tool_cut: False` on tools fed by several lanes. These override the `AFC.cfg` values for that
+  tool only.
+- **No `tool` or `led_name`.** The tool is found by `tool_index`, and all tools share the Smart
+  Head neopixel.
+
+### Loading only happens on the head
+
+Lanes never push filament into a docked tool. There is a gap between the end of the PTFE on the
+passive tool and the DX gears, and without the DX there filament can spool out into the head with
+nothing to detect it. AFC picks the tool up first for every `TOOL_LOAD`, `T<n>`, `CHANGE_TOOL`
+and `AFC_CALIBRATION` bowden or direct lane calibration, and a `direct_load` lane picks its tool
+up when a spool is inserted. The printer must be homed for the pickup, and the tool stays on the
+head after a calibration.
+
+`LANE_MOVE` does not pick the tool up. Pick it up first with `T<n>` before moving a lane past its
+hub.
+
+### Example
+
+A 4 lane BoxTurtle feeding four INDX tools:
+
+- `lane1` + `lane2` → `hub_t0` → `tool0` (hub)
+- `lane3` → `tool1` (direct)
+- `lane4` → `tool2` (direct)
+- `tool3` standalone
+
+**`AFC_Hardware.cfg`:**
 
 ```ini
 [AFC_extruder tool0]
@@ -119,49 +166,125 @@ extruder_name: extruder
 tool_index: 0
 toolchanger_unit: INDX
 pin_tool_start: buffer
-buffer: buf_t0
-# INDX tools have no cutter, tip form when a lane on this tool is swapped
+buffer: TN_t0
+tool_stn: 72
+tool_stn_unload: 100
+# fed by two lanes, tip form when switching between them
 form_tip: True
 tool_cut: False
 
+[AFC_extruder tool1]
+extruder_name: extruder
+tool_index: 1
+toolchanger_unit: INDX
+pin_tool_start: buffer
+buffer: TN_t1
+tool_stn: 72
+tool_stn_unload: 100
+
+[AFC_extruder tool2]
+extruder_name: extruder
+tool_index: 2
+toolchanger_unit: INDX
+pin_tool_start: buffer
+buffer: TN_t2
+tool_stn: 72
+tool_stn_unload: 100
+
+# standalone, unchanged from the installed template
+[AFC_extruder tool3]
+extruder_name: extruder
+tool_index: 3
+map: T4
+toolchanger_unit: INDX
+pin_tool_start: virtual
+standalone_auto_load_unload: False
+tool_stn: 72
+tool_stn_unload: 100
+```
+
+**`AFC_Turtle_1.cfg`** (only the options that change are shown, keep the pins from the
+template):
+
+```ini
 [AFC_BoxTurtle Turtle_1]
-hub: hub_t0
-extruder: tool0              # lanes 1 and 2 feed tool0 through hub_t0
+hub: hub_t0                 # default for lanes that don't set their own
+extruder: tool0
+
+[AFC_hub hub_t0]
+switch_pin: ^Turtle_1:HUB
+afc_bowden_length: 900      # hub to the DX gears on tool0
+move_dis: 75
+cut: False
+
+[AFC_stepper lane1]
+unit: Turtle_1:1
+dist_hub: 155
+map: T0
+...
+
+[AFC_stepper lane2]
+unit: Turtle_1:2
+dist_hub: 80
+map: T1
+...
 
 [AFC_stepper lane3]
 unit: Turtle_1:3
 hub: direct
-extruder: tool1              # lane 3 feeds tool1 on its own
+extruder: tool1
+dist_hub: 1050              # lane to the DX gears on tool1
+load_to_hub: False
+map: T2
+...
+
+[AFC_stepper lane4]
+unit: Turtle_1:4
+hub: direct
+extruder: tool2
 dist_hub: 1050
+load_to_hub: False
+map: T3
 ...
 ```
+
+The `T<n>` numbers follow the lanes, not the tools: `T0` and `T1` are both on `tool0`, and the
+standalone `tool3` is `T4`.
+
+Each `TN_t<n>` is an `[AFC_buffer]` section, see
+[Buffer Overview](../installation/buffer-overview.md).
+
+### Tool changes
 
 What a tool change does depends on what the target tool holds:
 
 - **Tool already holds the lane**: pickup only. Nothing is unloaded, loaded or purged.
-- **Same tool, other lane** (N:1): tip form, unload, load and purge with the tool on the head.
+- **Same tool, other lane** (hub): tip form, unload, load and purge with the tool on the head.
 - **Other tool holding another lane**: park, pick the tool up at the temperature of the lane it
   holds, unload that lane, then load the new one at its own temperature and purge.
 - **Empty tool**: pickup, then load.
 - **Runout with infinite spool to a lane on another tool**: the remaining filament is unloaded
   from the tool on the head before it is parked, so a docked tool never keeps a short end.
 
-`tool_cut` and `form_tip` on an `[AFC_extruder]` override the `AFC.cfg` values for that tool, so
-a printer can cut on one toolhead and tip form on its INDX tools.
+Changes between two lanes on different tools take longer than on other toolchangers, since the
+single heater has to reheat for the unload and again for the load. Slicer time estimates will be
+low.
 
-AFC checks at startup that:
+The filament stays in a docked tool and its lane motor runs free until the tool is picked up
+again. The DX drives the latch and may grip the filament, so every latch move unsyncs and
+disables the lane motors and their buffers. The lane in the tool on the head is enabled again
+once the change finishes.
 
-- no lane feeds a tool listed in `no_heat_tools`
-- each hub feeds only one tool (checked for every toolchanger)
+### Startup checks
 
-A lane-fed tool can't use `pin_tool_start: virtual`, as with any AFC toolhead.
+AFC stops at startup if:
+
+- a lane feeds a tool listed in `no_heat_tools`
+- a hub feeds lanes on more than one tool
+- a lane-fed tool uses `pin_tool_start: virtual`
 
 It warns about any enabled AFC park, poop, kick, brush or cut position on the dock side of
 `clearance_y` in `indx.cfg`, since a tool on the head can hit the docked tools there.
-
-The DX drives the latch and may grip the filament, so every latch move unsyncs and disables the
-lane motors and their buffers. The lane in the tool on the head is enabled again once the change
-finishes.
 
 ## Slicer
 
@@ -180,8 +303,9 @@ CHANGE_TOOL LANE=tool{next_extruder} NEW_EXTRUDER_TEMP={new_filament_temp}
 
 ## Current limits
 
-- Lanes only move filament into a tool while it is on the head. Pushing filament into a
-  docked tool ahead of the pickup is planned.
+- Lanes only move filament into a tool while it is on the head, see
+  [Loading only happens on the head](#loading-only-happens-on-the-head).
+- The installer does not assign lanes to tools, edit the config by hand.
 - `led_name` should not be set on INDX tools. All tools share the Smart Head neopixel.
 
 ## Updating the INDX macros

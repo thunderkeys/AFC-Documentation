@@ -16,6 +16,12 @@ through the calibration steps. Make sure you run through both lane and bowden ca
     to be done is because AFC plugin moves the toolhead to Y120 since this is where the toolhead is moved to when loading filament to the toolhead.
     This movement to Y120 helps filament not get stuck in the toolhead when loading.
 
+=== "Calibrating on Bondtech INDX"
+    Home the printer first. Before a bowden or direct lane calibration, AFC picks up the tool the
+    lane feeds, since a docked INDX tool has nothing to stop the filament. The tool stays on the
+    head afterwards. The length is measured to the DX gears, where the tool's buffer triggers.
+    See [Feeding tools from an AFC unit](../toolchanger/indx.md#feeding-tools-from-an-afc-unit).
+
 Calibration is done once all lanes and bowden length has been calibrated successfully.
 
 ## Manual Calibration

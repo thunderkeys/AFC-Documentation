@@ -86,6 +86,10 @@ custom_unselect: UNSELECT_TOOL
 
 ## Lane-to-Toolhead Connection Modes
 
+!!! note
+    On a Bondtech INDX the modes are the same, but the tool sensor, buffer and lane names
+    differ. See [Feeding tools from an AFC unit](indx.md#feeding-tools-from-an-afc-unit).
+
 ### Direct Mode
 
 Use **direct** mode when a single lane connects straight to a dedicated toolhead with no hub
